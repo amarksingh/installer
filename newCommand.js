@@ -76,13 +76,23 @@ class NewCommand extends Command {
 
         let $url = this.runCommands(['npm v @ostro/ostro dist.tarball'])
         let $commands = [
-            `cd ${$directory}`,
-            `curl -s "${$url.trim()}" | tar -xzf - --strip 1`,
+            `cd ${$directory}`, // shared across platforms
         ];
-        if (osType != 'Windows_NT') {
-            $commands.push(`chmod 755 "${$directory}/assistant"`);
+        
+        if (osType === 'Windows_NT') {
+            // Windows PowerShell version using Invoke-WebRequest
+            $commands.push(
+                `powershell -Command "Invoke-WebRequest -Uri '${$url.trim()}' -OutFile 'ostro.tar.gz'"`,
+                `tar -xzf ostro.tar.gz --strip 1`,
+                `powershell -Command "Remove-Item -Force 'ostro.tar.gz'"`
+            );
+        } else {
+            // Linux/macOS
+            $commands.push(
+                `curl -s "${$url.trim()}" | tar -xzf - --strip 1`,
+                `chmod 755 "${$directory}/assistant"`
+            );
         }
-
         this.runCommands($commands)
         readline.clearLine(process.stdout, 0)
         readline.cursorTo(process.stdout, 0, null)
