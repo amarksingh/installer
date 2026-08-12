@@ -1,53 +1,67 @@
 <div align="center">
-  <h1>OstroJS Framework</h1>
-  
-</div>
-<br />
 
-<div align="center">
-  <h3>OstroJS Installer</h3>
-  <p>Installer Module for OstroJS</p>
-</div>
+# OstroJS Framework Installer
 
-<br />
+[![npm version](https://img.shields.io/npm/v/@ostro/installer.svg)](https://www.npmjs.com/package/@ostro/installer)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D%2014.0.0-brightgreen.svg)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
 
-<div align="center">
+Official Command Line Interface (CLI) installer for scaffolding **OstroJS** applications across macOS, Linux, and Windows.
 
-![][javascript-image] [![license-image]][license-url] [![nodejs-image]][npm-url]
+[Website](https://ostrojs.com) • [Documentation](https://ostrojs.com/docs) • [Repository](https://github.com/ostrojs/installer)
 
 </div>
 
-<div align="center">
-  <h3>
-    <a href="https://ostrojs.com">
-      Website
-    </a>
-   
-  </h3>
-</div>
+---
 
-## Installation
-You can install the package from npm.
+## 🚀 Installation
+
+Install the installer globally using `npm`:
+
 ```bash
-npm i --global @ostro/installer
+npm install --global @ostro/installer
 ```
 
-## Usage
+---
+
+## 🛠️ Usage
+
+Create a new OstroJS application by passing the desired project directory name:
 
 ```bash
 ostro new myapp
-
-cd myapp
-
-# start http server
-node app
 ```
- 
-[javascript-image]: https://img.shields.io/badge/JS-javascript-green
-[javascript-url]:  "javascript"
 
-[nodejs-image]: https://img.shields.io/badge/node-%3E%3D%2012.0.0-green
-[npm-url]: https://npmjs.org/package/@ostro/installer "npm"
+Navigate into your application directory and start the server:
 
-[license-image]: https://img.shields.io/github/license/ostrojs/installer
-[license-url]: LICENSE.md "license"
+```bash
+cd myapp
+node app.js
+```
+
+---
+
+## ⚙️ Command Options
+
+| Command / Option | Description |
+| :--- | :--- |
+| `ostro new <name>` | Scaffolds a new application in `./<name>`. |
+| `ostro new .` | Scaffolds a new application directly inside the current directory. |
+| `ostro new <name> --force` | Forces creation even if the target directory already exists (overwrites). |
+| `ostro new <name> --dev` | Installs the latest development release (`dev-master`). |
+
+---
+
+## 🖥️ Cross-Platform Support
+
+Fully compatible and tested across all major operating systems:
+
+- **macOS** (Intel & Apple Silicon)
+- **Linux** (Debian, Ubuntu, RHEL, Alpine, etc.)
+- **Windows** (Windows 10, Windows 11, PowerShell, CMD)
+
+---
+
+## 📄 License
+
+The OstroJS Installer is open-sourced software licensed under the [MIT License](LICENSE.md).
