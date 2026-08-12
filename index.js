@@ -1,12 +1,34 @@
 #!/usr/bin/env node
 
-require('@ostro/support/helpers')
-const $app = new(require('@ostro/console'))
-$app.add(new(require('./newCommand')))
-$app.run(process.argv.slice(2)).then(res=>{
-}).catch(err=>{
-	console.error(err)
-}).finally(res => {
-    process.exit(1)
-})
+/**
+ * @file Index entry point for @ostro/installer CLI binary.
+ * @module @ostro/installer
+ */
 
+require('@ostro/support/helpers');
+const ConsoleApplication = require('@ostro/console');
+const NewCommand = require('./newCommand');
+
+/**
+ * Initialize the Ostro Console Application instance.
+ * @type {ConsoleApplication}
+ */
+const $app = new ConsoleApplication();
+
+/**
+ * Register available CLI commands.
+ */
+$app.add(new NewCommand());
+
+/**
+ * Parse CLI arguments and execute the matching command.
+ * Exits with status code 0 on success, or status code 1 on error.
+ */
+$app.run(process.argv.slice(2))
+    .then(() => {
+        process.exit(0);
+    })
+    .catch((err) => {
+        console.error(err);
+        process.exit(1);
+    });
