@@ -183,7 +183,7 @@ class NewCommand extends Command {
      * @param {string} label - Progress label message.
      * @returns {void}
      */
-    startSpinner(prefix, label) {
+    startSpinner(prefix: any, label: any) {
         const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
         let i = 0;
         this.stopSpinner();
@@ -222,7 +222,7 @@ class NewCommand extends Command {
      * @param {string} text - Message text to display.
      * @returns {void}
      */
-    updateSingleLine(prefix, text) {
+    updateSingleLine(prefix: any, text: any) {
         if (process.stdout.isTTY) {
             readline.clearLine(process.stdout, 0);
             readline.cursorTo(process.stdout, 0);
@@ -255,7 +255,7 @@ class NewCommand extends Command {
      * @param {string} prefix - Step label prefix.
      * @returns {Promise<void>}
      */
-    runNpmInstallWithRealtimeLog(directory, prefix) {
+    runNpmInstallWithRealtimeLog(directory: any, prefix: any) {
         return new Promise((resolve, reject) => {
             const child = child_process.exec('npm install', { cwd: directory });
             const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
@@ -300,7 +300,7 @@ class NewCommand extends Command {
      * @param {Object} [options={}] - Additional options for child_process.exec (e.g. { cwd }).
      * @returns {Promise<string>} Output from executed commands.
      */
-    runCommandsAsync(commands, options = {}) {
+    runCommandsAsync(commands: any, options: Record<string, any> = {}) {
         return new Promise((resolve, reject) => {
             const cmd = commands.join(' && ');
             child_process.exec(cmd, { encoding: 'utf8', ...options }, (error, stdout, stderr) => {
@@ -320,7 +320,7 @@ class NewCommand extends Command {
      * @param {Object} [options={}] - Additional options for child_process.execSync.
      * @returns {string} Standard output from execution.
      */
-    runCommandsSync(commands, options = {}) {
+    runCommandsSync(commands: any, options: Record<string, any> = {}) {
         return child_process.execSync(commands.join(' && '), { encoding: 'utf8', ...options });
     }
 
@@ -330,7 +330,7 @@ class NewCommand extends Command {
      * @param {string} $directory - Absolute target directory path.
      * @returns {void}
      */
-    verifyApplicationDoesntExist($directory) {
+    verifyApplicationDoesntExist($directory: any) {
         try {
             let stat = fs.statSync($directory);
             if ((stat.isDirectory() || stat.isFile()) && $directory !== process.cwd()) {
@@ -350,7 +350,7 @@ class NewCommand extends Command {
      * @param {string} $file - Target file path.
      * @returns {void}
      */
-    replaceInFile($search, $replace, $file) {
+    replaceInFile($search: any, $replace: any, $file: any) {
         fs.writeFileSync($file, fs.readFileSync($file, 'utf8').replace($search, $replace));
     }
 }
