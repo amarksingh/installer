@@ -2,14 +2,14 @@
   "name": "@ostro/installer",
   "version": "1.0.6",
   "description": "Official CLI installer for the OstroJS framework",
-  "main": "index.js",
+  "main": "index.ts",
   "type": "commonjs",
   "bin": {
-    "ostro": "index.js"
+    "ostro": "index.ts"
   },
   "files": [
-    "index.js",
-    "newCommand.js",
+    "index.ts",
+    "newCommand.ts",
     "LICENSE.md",
     "README.md"
   ],

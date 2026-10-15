@@ -28,7 +28,7 @@ describe('CLI Index Entry Point', () => {
         const ConsoleApplication = require('@ostro/console');
         const runSpy = jest.spyOn(ConsoleApplication.prototype, 'run').mockResolvedValue(0);
 
-        require('../index.js');
+        require('../index');
 
         // Allow promise microtask to resolve
         await new Promise(process.nextTick);
@@ -44,7 +44,7 @@ describe('CLI Index Entry Point', () => {
         const testErr = new Error('CLI execution failure');
         const runSpy = jest.spyOn(ConsoleApplication.prototype, 'run').mockRejectedValue(testErr);
 
-        require('../index.js');
+        require('../index');
 
         // Allow promise microtask to resolve
         await new Promise(process.nextTick);
