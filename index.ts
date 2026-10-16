@@ -6,8 +6,8 @@
  */
 
 import '@ostro/support/helpers';
-import ConsoleApplication = require('@ostro/console');
-import NewCommand = require('./newCommand');
+import ConsoleApplication from '@ostro/console';
+import NewCommand from './newCommand';
 
 /**
  * Initialize the Ostro Console Application instance.
@@ -32,4 +32,4 @@ $app.run(process.argv.slice(2))
         process.exit(1);
     });
 
-export = $app;
+export default $app;

@@ -1,9 +1,9 @@
-import fs = require('fs');
-import child_process = require('child_process');
-import readline = require('readline');
-import os = require('os');
-import path = require('path');
-import Command = require('@ostro/console/command');
+import fs from 'fs';
+import child_process from 'child_process';
+import readline from 'readline';
+import os from 'os';
+import path from 'path';
+import Command from '@ostro/console/command';
 import type { ExecOptions, ExecSyncOptions } from 'child_process';
 
 interface NewCommand {
@@ -352,4 +352,7 @@ class NewCommand extends Command {
     }
 }
 
-export = NewCommand;
+Object.defineProperty(NewCommand, '__esModule', { value: true });
+(NewCommand as any).default = NewCommand;
+
+export default NewCommand;
