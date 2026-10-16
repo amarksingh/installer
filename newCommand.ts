@@ -1,60 +1,67 @@
-const Command = require('@ostro/console/command');
-const child_process = require('child_process');
-const readline = require('readline');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+import fs = require('fs');
+import child_process = require('child_process');
+import readline = require('readline');
+import os = require('os');
+import path = require('path');
+import Command = require('@ostro/console/command');
+import type { ExecOptions, ExecSyncOptions } from 'child_process';
+
+interface NewCommand {
+    input: {
+        getArgument(name: string): string;
+        getOption(name: string): unknown;
+    };
+    output: {
+        write(message: string): void;
+        writeln(message: string): void;
+    };
+    info(message: string): void;
+    error(message: unknown): void;
+}
 
 /**
  * Command class for initializing a new OstroJS application across Linux, macOS, and Windows.
- *
- * @class NewCommand
- * @extends {Command}
  */
 class NewCommand extends Command {
 
     /**
      * The console command signature.
-     *
-     * @type {string}
      */
-    $signature = 'new';
+    public $signature: string = 'new';
 
     /**
      * The console command description.
-     *
-     * @type {string}
      */
-    $description = 'Create a new OstroJS application';
+    public $description: string = 'Create a new OstroJS application';
 
     /**
      * The console command options definition.
-     *
-     * @type {Array<Object>}
      */
-    $options = [
+    public $options: unknown[] = [
         this.createOption('--dev', 'Installs the latest "development" release'),
         this.createOption('--force', 'Forces install even if the directory already exists').default(false)
     ];
 
     /**
      * The console command arguments definition.
-     *
-     * @type {Array<Object>}
      */
-    $arguments = [
+    public $arguments: unknown[] = [
         this.createArgument('name', 'The name of the application').required()
     ];
 
     /**
+     * Active spinner timer instance.
+     */
+    public spinnerTimer: NodeJS.Timeout | null = null;
+
+    /**
      * Execute the console command.
      *
-     * @async
-     * @returns {Promise<void>}
+     * @returns A promise that resolves when installation completes.
      */
-    async handle() {
-        let directoryCreated = false;
-        let $directory = '.';
+    public async handle(): Promise<void> {
+        let directoryCreated: boolean = false;
+        let $directory: string = '.';
         try {
             this.output.writeln(`<fg=cyan> 
                 ___
@@ -63,12 +70,12 @@ class NewCommand extends Command {
             |        / ___\|   \|   | \'__/  _  \\
             |        \\___ \\   |   | | \|  (_)  \|
              \\       /____\/   |   | |  \\ ___ \/
-              \\ ___ /                     
+               \\ ___ /                     
             
              
          </>`);
 
-            let $name = this.input.getArgument('name');
+            const $name: string = this.input.getArgument('name');
             $directory = $name !== '.' ? path.resolve(process.cwd(), $name) : '.';
 
             if (!this.input.getOption('force')) {
@@ -79,12 +86,12 @@ class NewCommand extends Command {
                 throw new Error('Cannot use --force option when using current directory for installation!');
             }
 
-            let $currentVersion = (this.runCommandsSync(['npm show @ostro/installer version']) || '').trim();
-            let $existingVersion = (this.runCommandsSync(['npm ls @ostro/installer -g version --depth=0']) || '');
+            const $currentVersion: string = (this.runCommandsSync(['npm show @ostro/installer version']) || '').trim();
+            let $existingVersion: string = (this.runCommandsSync(['npm ls @ostro/installer -g version --depth=0']) || '');
             $existingVersion = $existingVersion.replace(/[^@]*@ostro\/installer@([\d.]+)\s*/, '$1').trim();
 
             this.output.write('[1/7] ');
-            let versionMessage = $existingVersion === $currentVersion
+            const versionMessage: string = $existingVersion === $currentVersion
                 ? '@ostro/installer version verified'
                 : 'Update required: "npm install @ostro/installer@latest -g"';
 
@@ -94,11 +101,11 @@ class NewCommand extends Command {
                 this.info(versionMessage);
             }
 
-            let osType = os.type();
+            const osType: string = os.type();
             if ($directory !== '.' && this.input.getOption('force')) {
                 try {
                     fs.rmSync($directory, { force: true, recursive: true });
-                } catch (e) {
+                } catch (e: unknown) {
                     this.error(e);
                 }
             }
@@ -108,8 +115,8 @@ class NewCommand extends Command {
             this.output.write('[2/7] ');
             this.info('Directory created');
 
-            let $url = this.runCommandsSync(['npm v @ostro/ostro dist.tarball']);
-            let $commands = [];
+            const $url: string = this.runCommandsSync(['npm v @ostro/ostro dist.tarball']);
+            const $commands: string[] = [];
 
             if (osType === 'Windows_NT') {
                 $commands.push(
@@ -148,7 +155,7 @@ class NewCommand extends Command {
             this.info('Key generated');
 
             if ($name !== '.') {
-                const dbName = $name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+                const dbName: string = $name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
                 this.replaceInFile('APP_URL=http://localhost', 'APP_URL=http://' + $name + '.test', path.join($directory, '.env'));
                 this.replaceInFile('DB_DATABASE=ostro', 'DB_DATABASE=' + dbName, path.join($directory, '.env'));
                 this.replaceInFile('DB_DATABASE=ostro', 'DB_DATABASE=' + dbName, path.join($directory, '.env.example'));
@@ -161,7 +168,7 @@ class NewCommand extends Command {
             process.stdout.write('\n');
             this.output.writeln('<fg=cyan>cd ' + $name + '</fg>');
             this.output.writeln('<fg=cyan>node app.js</fg>');
-        } catch (error) {
+        } catch (error: any) {
             this.stopSpinnerAndClear();
             process.stdout.write('\n');
             this.error(`\nInstallation failed: ${error.message}`);
@@ -179,26 +186,23 @@ class NewCommand extends Command {
     /**
      * Start an animated progress spinner for a given step.
      *
-     * @param {string} prefix - Step identifier (e.g. '[3/7]').
-     * @param {string} label - Progress label message.
-     * @returns {void}
+     * @param prefix - Step identifier (e.g. '[3/7]').
+     * @param label - Progress label message.
      */
-    startSpinner(prefix: any, label: any) {
-        const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-        let i = 0;
+    public startSpinner(prefix: string, label: string): void {
+        const frames: readonly string[] = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+        let i: number = 0;
         this.stopSpinner();
-        this.spinnerTimer = setInterval(() => {
-            const frame = frames[i++ % frames.length];
+        this.spinnerTimer = setInterval((): void => {
+            const frame: string = frames[i++ % frames.length];
             this.updateSingleLine(prefix, `${frame} ${label}`);
         }, 80);
     }
 
     /**
      * Stop the currently running progress spinner.
-     *
-     * @returns {void}
      */
-    stopSpinner() {
+    public stopSpinner(): void {
         if (this.spinnerTimer) {
             clearInterval(this.spinnerTimer);
             this.spinnerTimer = null;
@@ -207,10 +211,8 @@ class NewCommand extends Command {
 
     /**
      * Stop the active spinner and clear the current stdout terminal line.
-     *
-     * @returns {void}
      */
-    stopSpinnerAndClear() {
+    public stopSpinnerAndClear(): void {
         this.stopSpinner();
         this.clearLine();
     }
@@ -218,16 +220,15 @@ class NewCommand extends Command {
     /**
      * Update the current terminal line with a single line message.
      *
-     * @param {string} prefix - Step label or prefix.
-     * @param {string} text - Message text to display.
-     * @returns {void}
+     * @param prefix - Step label or prefix.
+     * @param text - Message text to display.
      */
-    updateSingleLine(prefix: any, text: any) {
+    public updateSingleLine(prefix: string, text: string): void {
         if (process.stdout.isTTY) {
             readline.clearLine(process.stdout, 0);
             readline.cursorTo(process.stdout, 0);
-            const cols = process.stdout.columns || 80;
-            let fullMsg = `${prefix} ${text}`;
+            const cols: number = process.stdout.columns || 80;
+            let fullMsg: string = `${prefix} ${text}`;
             if (fullMsg.length > cols - 2) {
                 fullMsg = fullMsg.substring(0, cols - 5) + '...';
             }
@@ -237,10 +238,8 @@ class NewCommand extends Command {
 
     /**
      * Clear the current line on TTY terminal output.
-     *
-     * @returns {void}
      */
-    clearLine() {
+    public clearLine(): void {
         if (process.stdout.isTTY) {
             readline.clearLine(process.stdout, 0);
             readline.cursorTo(process.stdout, 0);
@@ -251,33 +250,33 @@ class NewCommand extends Command {
      * Run `npm install` asynchronously while streaming real-time output on a single line.
      * Uses system shell context and an active spinner to ensure non-blocking execution across OSes.
      *
-     * @param {string} directory - Path to the target directory.
-     * @param {string} prefix - Step label prefix.
-     * @returns {Promise<void>}
+     * @param directory - Path to the target directory.
+     * @param prefix - Step label prefix.
+     * @returns A promise that resolves when installation completes.
      */
-    runNpmInstallWithRealtimeLog(directory: any, prefix: any) {
-        return new Promise((resolve, reject) => {
-            const child = child_process.exec('npm install', { cwd: directory });
-            const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-            let i = 0;
-            let lastLogLine = 'Starting npm install...';
+    public runNpmInstallWithRealtimeLog(directory: string, prefix: string): Promise<void> {
+        return new Promise<void>((resolve, reject): void => {
+            const child: child_process.ChildProcess = child_process.exec('npm install', { cwd: directory });
+            const frames: readonly string[] = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+            let i: number = 0;
+            let lastLogLine: string = 'Starting npm install...';
 
-            const timer = setInterval(() => {
-                const frame = frames[i++ % frames.length];
+            const timer: NodeJS.Timeout = setInterval((): void => {
+                const frame: string = frames[i++ % frames.length];
                 this.updateSingleLine(prefix, `${frame} Installing... ${lastLogLine}`);
             }, 80);
 
-            const handleOutput = (data) => {
-                const lines = data.toString().split('\n').filter(line => line.trim());
+            const handleOutput = (data: string | Buffer): void => {
+                const lines: string[] = data.toString().split('\n').filter((line: string): boolean => Boolean(line.trim()));
                 if (lines.length > 0) {
                     lastLogLine = lines[lines.length - 1].trim();
                 }
             };
 
-            child.stdout.on('data', handleOutput);
-            child.stderr.on('data', handleOutput);
+            child.stdout!.on('data', handleOutput);
+            child.stderr!.on('data', handleOutput);
 
-            child.on('close', (code) => {
+            child.on('close', (code: number | null): void => {
                 clearInterval(timer);
                 if (code === 0) {
                     resolve();
@@ -286,7 +285,7 @@ class NewCommand extends Command {
                 }
             });
 
-            child.on('error', (err) => {
+            child.on('error', (err: Error): void => {
                 clearInterval(timer);
                 reject(err);
             });
@@ -296,14 +295,14 @@ class NewCommand extends Command {
     /**
      * Execute shell commands asynchronously and return a Promise.
      *
-     * @param {Array<string>} commands - List of commands to execute sequentially.
-     * @param {Object} [options={}] - Additional options for child_process.exec (e.g. { cwd }).
-     * @returns {Promise<string>} Output from executed commands.
+     * @param commands - List of commands to execute sequentially.
+     * @param options - Additional options for child_process.exec (e.g. { cwd }).
+     * @returns Output from executed commands.
      */
-    runCommandsAsync(commands: any, options: Record<string, any> = {}) {
-        return new Promise((resolve, reject) => {
-            const cmd = commands.join(' && ');
-            child_process.exec(cmd, { encoding: 'utf8', ...options }, (error, stdout, stderr) => {
+    public runCommandsAsync(commands: string[], options: ExecOptions = {}): Promise<string> {
+        return new Promise<string>((resolve, reject): void => {
+            const cmd: string = commands.join(' && ');
+            child_process.exec(cmd, { encoding: 'utf8', ...options }, (error: child_process.ExecException | null, stdout: string, stderr: string): void => {
                 if (error) {
                     reject(new Error(stderr || error.message));
                 } else {
@@ -316,28 +315,27 @@ class NewCommand extends Command {
     /**
      * Execute shell commands synchronously.
      *
-     * @param {Array<string>} commands - List of commands to execute.
-     * @param {Object} [options={}] - Additional options for child_process.execSync.
-     * @returns {string} Standard output from execution.
+     * @param commands - List of commands to execute.
+     * @param options - Additional options for child_process.execSync.
+     * @returns Standard output from execution.
      */
-    runCommandsSync(commands: any, options: Record<string, any> = {}) {
-        return child_process.execSync(commands.join(' && '), { encoding: 'utf8', ...options });
+    public runCommandsSync(commands: string[], options: ExecSyncOptions = {}): string {
+        return child_process.execSync(commands.join(' && '), { encoding: 'utf8', ...options }) as string;
     }
 
     /**
      * Verify whether the target application directory already exists.
      *
-     * @param {string} $directory - Absolute target directory path.
-     * @returns {void}
+     * @param $directory - Absolute target directory path.
      */
-    verifyApplicationDoesntExist($directory: any) {
+    public verifyApplicationDoesntExist($directory: string): void {
         try {
-            let stat = fs.statSync($directory);
+            const stat: fs.Stats = fs.statSync($directory);
             if ((stat.isDirectory() || stat.isFile()) && $directory !== process.cwd()) {
                 this.error('Application already exists!');
                 process.exit(1);
             }
-        } catch (e) {
+        } catch (_e: unknown) {
             // Path does not exist, which is expected
         }
     }
@@ -345,14 +343,13 @@ class NewCommand extends Command {
     /**
      * Replace occurrences of a substring inside a target file.
      *
-     * @param {string} $search - String to search for.
-     * @param {string} $replace - Replacement string.
-     * @param {string} $file - Target file path.
-     * @returns {void}
+     * @param $search - String to search for.
+     * @param $replace - Replacement string.
+     * @param $file - Target file path.
      */
-    replaceInFile($search: any, $replace: any, $file: any) {
+    public replaceInFile($search: string | RegExp, $replace: string, $file: string): void {
         fs.writeFileSync($file, fs.readFileSync($file, 'utf8').replace($search, $replace));
     }
 }
 
-module.exports = NewCommand;
+export = NewCommand;

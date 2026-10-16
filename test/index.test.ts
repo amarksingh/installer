@@ -1,15 +1,13 @@
-const EventEmitter = require('events');
-
 describe('CLI Index Entry Point', () => {
-    let originalArgv;
-    let originalExit;
-    let originalError;
+    let originalArgv: string[];
+    let originalExit: typeof process.exit;
+    let originalError: typeof console.error;
 
     beforeEach(() => {
         originalArgv = process.argv;
         originalExit = process.exit;
         originalError = console.error;
-        process.exit = jest.fn();
+        process.exit = jest.fn() as unknown as typeof process.exit;
         console.error = jest.fn();
         jest.resetModules();
     });
@@ -41,7 +39,7 @@ describe('CLI Index Entry Point', () => {
         process.argv = ['node', 'index.js', 'invalid'];
 
         const ConsoleApplication = require('@ostro/console');
-        const testErr = new Error('CLI execution failure');
+        const testErr: Error = new Error('CLI execution failure');
         const runSpy = jest.spyOn(ConsoleApplication.prototype, 'run').mockRejectedValue(testErr);
 
         require('../index');
