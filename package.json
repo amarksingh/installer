@@ -2,22 +2,33 @@
   "name": "@ostro/installer",
   "version": "1.0.6",
   "description": "Official CLI installer for the OstroJS framework",
-  "main": "index.ts",
-  "type": "commonjs",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "bin": {
-    "ostro": "index.ts"
+    "ostro": "build/index.js"
   },
   "files": [
-    "index.ts",
-    "newCommand.ts",
+    "build",
     "LICENSE.md",
     "README.md"
   ],
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    },
+    "./*": {
+      "types": "./build/*.d.ts",
+      "default": "./build/*.js"
+    }
+  },
   "dependencies": {
     "@ostro/console": "^1.0.5",
     "@ostro/support": "^1.2.1"
   },
   "scripts": {
+    "build": "npx tsc -p tsconfig.build.json && chmod +x build/index.js",
+    "prepublishOnly": "npm run build",
     "test": "npx c8 npx jest"
   },
   "engines": {

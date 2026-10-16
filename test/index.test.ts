@@ -23,7 +23,8 @@ describe('CLI Index Entry Point', () => {
         process.argv = ['node', 'index.js', '--help'];
         
         // Mock ConsoleApplication run method
-        const ConsoleApplication = require('@ostro/console');
+        const _ConsoleApp = require('@ostro/console');
+        const ConsoleApplication = _ConsoleApp.default || _ConsoleApp;
         const runSpy = jest.spyOn(ConsoleApplication.prototype, 'run').mockResolvedValue(0);
 
         require('../index');
@@ -38,7 +39,8 @@ describe('CLI Index Entry Point', () => {
     test('handles error and calls process.exit(1)', async () => {
         process.argv = ['node', 'index.js', 'invalid'];
 
-        const ConsoleApplication = require('@ostro/console');
+        const _ConsoleApp = require('@ostro/console');
+        const ConsoleApplication = _ConsoleApp.default || _ConsoleApp;
         const testErr: Error = new Error('CLI execution failure');
         const runSpy = jest.spyOn(ConsoleApplication.prototype, 'run').mockRejectedValue(testErr);
 

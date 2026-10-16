@@ -27,27 +27,35 @@ class NewCommand extends Command {
     /**
      * The console command signature.
      */
-    public $signature: string = 'new';
+    public get $signature(): string {
+        return 'new';
+    }
 
     /**
      * The console command description.
      */
-    public $description: string = 'Create a new OstroJS application';
+    public get $description(): string {
+        return 'Create a new OstroJS application';
+    }
 
     /**
      * The console command options definition.
      */
-    public $options: unknown[] = [
-        this.createOption('--dev', 'Installs the latest "development" release'),
-        this.createOption('--force', 'Forces install even if the directory already exists').default(false)
-    ];
+    public get $options(): any[] {
+        return [
+            this.createOption('--dev', 'Installs the latest "development" release'),
+            this.createOption('--force', 'Forces install even if the directory already exists').default(false)
+        ];
+    }
 
     /**
      * The console command arguments definition.
      */
-    public $arguments: unknown[] = [
-        this.createArgument('name', 'The name of the application').required()
-    ];
+    public get $arguments(): any[] {
+        return [
+            this.createArgument('name', 'The name of the application').required()
+        ];
+    }
 
     /**
      * Active spinner timer instance.
