@@ -1,6 +1,6 @@
 {
   "name": "@ostro/installer",
-  "version": "1.0.6",
+  "version": "2.0.0-alpha.1",
   "description": "Official CLI installer for the OstroJS framework",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -23,8 +23,8 @@
     }
   },
   "dependencies": {
-    "@ostro/console": "^1.0.5",
-    "@ostro/support": "^1.2.1"
+    "@ostro/console": "^2.0.0-alpha.1",
+    "@ostro/support": "^2.0.0-alpha.1"
   },
   "scripts": {
     "build": "npx tsc -p tsconfig.build.json && chmod +x build/index.js",

@@ -97,7 +97,7 @@ class NewCommand extends Command {
 
             const $currentVersion: string = (this.runCommandsSync(['npm show @ostro/installer version']) || '').trim();
             let $existingVersion: string = (this.runCommandsSync(['npm ls @ostro/installer -g version --depth=0']) || '');
-            $existingVersion = $existingVersion.replace(/[^@]*@ostro\/installer@([\d.]+)\s*/, '$1').trim();
+            $existingVersion = $existingVersion.replace(/[^@]*@ostro\/installer@([\w.-]+)\s*/, '$1').trim();
 
             this.output.write('[1/7] ');
             const versionMessage: string = $existingVersion === $currentVersion
