@@ -44,7 +44,8 @@ class NewCommand extends Command {
     public get $options(): any[] {
         return [
             this.createOption('--dev', 'Installs the latest "development" release'),
-            this.createOption('--force', 'Forces install even if the directory already exists').default(false)
+            this.createOption('--force', 'Forces install even if the directory already exists').default(false),
+            this.createOption('--format <type>', 'Format of the application framework (js or ts)').default('ts').choices(['js', 'ts'])
         ];
     }
 
@@ -162,6 +163,9 @@ class NewCommand extends Command {
             this.output.write('[6/7] ');
             this.info('Key generated');
 
+            const formatOption: string = String(this.input.getOption('format') || 'ts').toLowerCase();
+            const format: 'js' | 'ts' = formatOption === 'js' ? 'js' : 'ts';
+
             if ($name !== '.') {
                 const dbName: string = $name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
                 this.replaceInFile('APP_URL=http://localhost', 'APP_URL=http://' + $name + '.test', path.join($directory, '.env'));
@@ -170,12 +174,17 @@ class NewCommand extends Command {
             }
 
             this.output.write('[7/7] ');
-            this.info('Application setup completed');
+            this.info(`Application setup completed (${format.toUpperCase()})`);
             process.stdout.write('\n\n');
             this.output.writeln('<comment>Application ready! Build something amazing.</comment>');
             process.stdout.write('\n');
             this.output.writeln('<fg=cyan>cd ' + $name + '</fg>');
-            this.output.writeln('<fg=cyan>node app.js</fg>');
+            if (format === 'ts') {
+                this.output.writeln('<fg=cyan>npm run build</fg>');
+                this.output.writeln('<fg=cyan>node build/app.js</fg>');
+            } else {
+                this.output.writeln('<fg=cyan>node app.js</fg>');
+            }
         } catch (error: any) {
             this.stopSpinnerAndClear();
             process.stdout.write('\n');

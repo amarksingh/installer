@@ -36,7 +36,7 @@ describe('NewCommand', () => {
         const cmd: NewCommand = new NewCommand();
         expect(cmd.$signature).toBe('new');
         expect(cmd.$description).toBe('Create a new OstroJS application');
-        expect(cmd.$options.length).toBe(2);
+        expect(cmd.$options.length).toBe(3);
         expect(cmd.$arguments.length).toBe(1);
     });
 
@@ -256,7 +256,7 @@ describe('NewCommand', () => {
             expect(cmd.info).toHaveBeenCalledWith('Environment file generated');
             expect(cmd.info).toHaveBeenCalledWith('Dependencies installed');
             expect(cmd.info).toHaveBeenCalledWith('Key generated');
-            expect(cmd.info).toHaveBeenCalledWith('Application setup completed');
+            expect(cmd.info).toHaveBeenCalledWith('Application setup completed (TS)');
             expect(cmd.replaceInFile).toHaveBeenCalled();
             expect(process.exit).not.toHaveBeenCalled();
         });
@@ -294,7 +294,7 @@ describe('NewCommand', () => {
             // Outdated version triggers error notice
             expect(cmd.error).toHaveBeenCalledWith('Update required: "npm install @ostro/installer@latest -g"');
             expect(fs.rmSync).toHaveBeenCalled();
-            expect(cmd.info).toHaveBeenCalledWith('Application setup completed');
+            expect(cmd.info).toHaveBeenCalledWith('Application setup completed (TS)');
         });
 
         test('handles force remove error gracefully during directory creation', async () => {
@@ -418,7 +418,38 @@ describe('NewCommand', () => {
             await cmd.handle();
 
             expect(cmd.replaceInFile).not.toHaveBeenCalled();
-            expect(cmd.info).toHaveBeenCalledWith('Application setup completed');
+            expect(cmd.info).toHaveBeenCalledWith('Application setup completed (TS)');
+        });
+
+        test('successful install workflow with format js', async () => {
+            const cmd: NewCommand = new NewCommand();
+            cmd.output = { writeln: jest.fn(), write: jest.fn() };
+            cmd.error = jest.fn();
+            cmd.info = jest.fn();
+            cmd.input = {
+                getArgument: jest.fn().mockReturnValue('js-app'),
+                getOption: jest.fn().mockImplementation((opt: string) => opt === 'format' ? 'js' : false)
+            };
+
+            jest.spyOn(os, 'type').mockReturnValue('Linux');
+            jest.spyOn(cmd, 'verifyApplicationDoesntExist').mockImplementation(() => {});
+            jest.spyOn(cmd, 'runCommandsSync').mockImplementation((cmds: string[]): any => {
+                const cmdStr: string = cmds[0];
+                if (cmdStr.includes('npm show @ostro/installer version')) return '1.0.6';
+                if (cmdStr.includes('npm ls @ostro/installer -g version')) return '@ostro/installer@1.0.6';
+                if (cmdStr.includes('npm v @ostro/ostro dist.tarball')) return 'https://tarball.tgz';
+                return '';
+            });
+            jest.spyOn(cmd, 'runCommandsAsync').mockResolvedValue('ok');
+            jest.spyOn(cmd, 'runNpmInstallWithRealtimeLog').mockResolvedValue(undefined);
+            jest.spyOn(cmd, 'replaceInFile').mockImplementation(() => {});
+            jest.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined as any);
+            jest.spyOn(fs, 'copyFileSync').mockImplementation(() => {});
+
+            await cmd.handle();
+
+            expect(cmd.info).toHaveBeenCalledWith('Application setup completed (JS)');
+            expect(cmd.output.writeln).toHaveBeenCalledWith('<fg=cyan>node app.js</fg>');
         });
     });
 
