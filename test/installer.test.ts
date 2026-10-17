@@ -37,7 +37,7 @@ describe('NewCommand', () => {
         expect(cmd.$signature).toBe('new');
         expect(cmd.$description).toBe('Create a new OstroJS application');
         expect(cmd.$options.length).toBe(3);
-        expect(cmd.$arguments.length).toBe(1);
+        expect(cmd.$arguments.length).toBe(2);
     });
 
     test('replaceInFile replaces matching text in file', () => {
@@ -251,12 +251,12 @@ describe('NewCommand', () => {
             await cmd.handle();
 
             expect(cmd.info).toHaveBeenCalledWith('@ostro/installer version verified');
-            expect(cmd.info).toHaveBeenCalledWith('Directory created');
             expect(cmd.info).toHaveBeenCalledWith('Application crafted');
             expect(cmd.info).toHaveBeenCalledWith('Environment file generated');
             expect(cmd.info).toHaveBeenCalledWith('Dependencies installed');
             expect(cmd.info).toHaveBeenCalledWith('Key generated');
-            expect(cmd.info).toHaveBeenCalledWith('Application setup completed (TS)');
+            expect(cmd.info).toHaveBeenCalledWith('TypeScript framework built');
+            expect(cmd.info).toHaveBeenCalledWith('Application ready at destination (TS)');
             expect(cmd.replaceInFile).toHaveBeenCalled();
             expect(process.exit).not.toHaveBeenCalled();
         });
@@ -294,7 +294,7 @@ describe('NewCommand', () => {
             // Outdated version triggers error notice
             expect(cmd.error).toHaveBeenCalledWith('Update required: "npm install @ostro/installer@latest -g"');
             expect(fs.rmSync).toHaveBeenCalled();
-            expect(cmd.info).toHaveBeenCalledWith('Application setup completed (TS)');
+            expect(cmd.info).toHaveBeenCalledWith('Application ready at destination (TS)');
         });
 
         test('handles force remove error gracefully during directory creation', async () => {
@@ -361,6 +361,35 @@ describe('NewCommand', () => {
 
             expect(cmd.error).toHaveBeenCalledWith(expect.stringContaining('Installation failed: Crafting failed'));
             expect(rmSyncSpy).toHaveBeenCalled();
+            expect(process.exit).toHaveBeenCalledWith(1);
+        });
+
+        test('auto-removes destination directory when copy to destination fails', async () => {
+            const cmd: NewCommand = new NewCommand();
+            cmd.output = { writeln: jest.fn(), write: jest.fn() };
+            cmd.error = jest.fn();
+            cmd.info = jest.fn();
+            cmd.input = {
+                getArgument: jest.fn().mockReturnValue('failing-app'),
+                getOption: jest.fn().mockReturnValue(false)
+            };
+
+            jest.spyOn(cmd, 'verifyApplicationDoesntExist').mockImplementation(() => {});
+            jest.spyOn(cmd, 'runCommandsSync').mockReturnValue('1.0.0');
+            jest.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined as any);
+            jest.spyOn(cmd, 'runCommandsAsync').mockResolvedValue('ok');
+            jest.spyOn(cmd, 'runNpmInstallWithRealtimeLog').mockResolvedValue(undefined);
+            jest.spyOn(cmd, 'replaceInFile').mockImplementation(() => {});
+            jest.spyOn(fs, 'copyFileSync').mockImplementation(() => {});
+            jest.spyOn(fs, 'cpSync').mockImplementation(() => {
+                throw new Error('Copy failed');
+            });
+            const rmSyncSpy = jest.spyOn(fs, 'rmSync').mockImplementation(() => {});
+
+            await cmd.handle();
+
+            expect(cmd.error).toHaveBeenCalledWith(expect.stringContaining('Installation failed: Copy failed'));
+            expect(rmSyncSpy).toHaveBeenCalled();
             expect(cmd.info).toHaveBeenCalledWith(expect.stringContaining('Auto-removed failed directory'));
             expect(process.exit).toHaveBeenCalledWith(1);
         });
@@ -418,7 +447,7 @@ describe('NewCommand', () => {
             await cmd.handle();
 
             expect(cmd.replaceInFile).not.toHaveBeenCalled();
-            expect(cmd.info).toHaveBeenCalledWith('Application setup completed (TS)');
+            expect(cmd.info).toHaveBeenCalledWith('Application ready at destination (TS)');
         });
 
         test('successful install workflow with format js', async () => {
@@ -445,10 +474,45 @@ describe('NewCommand', () => {
             jest.spyOn(cmd, 'replaceInFile').mockImplementation(() => {});
             jest.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined as any);
             jest.spyOn(fs, 'copyFileSync').mockImplementation(() => {});
+            jest.spyOn(cmd, 'convertToJavaScript').mockResolvedValue(undefined);
 
             await cmd.handle();
 
-            expect(cmd.info).toHaveBeenCalledWith('Application setup completed (JS)');
+            expect(cmd.info).toHaveBeenCalledWith('Pure JavaScript framework built');
+            expect(cmd.info).toHaveBeenCalledWith('Application ready at destination (JS)');
+            expect(cmd.output.writeln).toHaveBeenCalledWith('<fg=cyan>node app.js</fg>');
+        });
+
+        test('successful install workflow with format passed as argument', async () => {
+            const cmd: NewCommand = new NewCommand();
+            cmd.output = { write: jest.fn(), writeln: jest.fn() };
+            cmd.info = jest.fn();
+            cmd.error = jest.fn();
+            cmd.input = {
+                getArgument: jest.fn().mockImplementation((arg: string) => arg === 'name' ? 'js-app' : (arg === 'format' ? 'js' : '')),
+                getOption: jest.fn().mockReturnValue(false)
+            };
+
+            jest.spyOn(os, 'type').mockReturnValue('Linux');
+            jest.spyOn(cmd, 'verifyApplicationDoesntExist').mockImplementation(() => {});
+            jest.spyOn(cmd, 'runCommandsSync').mockImplementation((cmds: string[]): any => {
+                const cmdStr: string = cmds[0];
+                if (cmdStr.includes('npm show @ostro/installer version')) return '1.0.6';
+                if (cmdStr.includes('npm ls @ostro/installer -g version')) return '@ostro/installer@1.0.6';
+                if (cmdStr.includes('npm v @ostro/ostro dist.tarball')) return 'https://tarball.tgz';
+                return '';
+            });
+            jest.spyOn(cmd, 'runCommandsAsync').mockResolvedValue('ok');
+            jest.spyOn(cmd, 'runNpmInstallWithRealtimeLog').mockResolvedValue(undefined);
+            jest.spyOn(cmd, 'replaceInFile').mockImplementation(() => {});
+            jest.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined as any);
+            jest.spyOn(fs, 'copyFileSync').mockImplementation(() => {});
+            jest.spyOn(cmd, 'convertToJavaScript').mockResolvedValue(undefined);
+
+            await cmd.handle();
+
+            expect(cmd.info).toHaveBeenCalledWith('Pure JavaScript framework built');
+            expect(cmd.info).toHaveBeenCalledWith('Application ready at destination (JS)');
             expect(cmd.output.writeln).toHaveBeenCalledWith('<fg=cyan>node app.js</fg>');
         });
     });
@@ -505,4 +569,256 @@ describe('NewCommand', () => {
         cmd.verifyApplicationDoesntExist('/fake/fifo');
         expect(process.exit).not.toHaveBeenCalled();
     });
+
+    test('removeTypeScriptArtifacts deletes .ts, .d.ts, .d.ts.map, and tsconfig files recursively', () => {
+        const cmd: NewCommand = new NewCommand();
+        const tmpDir: string = path.join(os.tmpdir(), `test-ts-clean-${Date.now()}`);
+        const subDir: string = path.join(tmpDir, 'sub');
+        const nodeModules: string = path.join(tmpDir, 'node_modules');
+        const gitDir: string = path.join(tmpDir, '.git');
+        fs.mkdirSync(subDir, { recursive: true });
+        fs.mkdirSync(nodeModules, { recursive: true });
+        fs.mkdirSync(gitDir, { recursive: true });
+
+        fs.writeFileSync(path.join(tmpDir, 'app.ts'), 'export default {};');
+        fs.writeFileSync(path.join(tmpDir, 'app.js'), 'module.exports = {};');
+        fs.writeFileSync(path.join(tmpDir, 'app.d.ts'), 'export {};');
+        fs.writeFileSync(path.join(tmpDir, 'app.d.ts.map'), '{}');
+        fs.writeFileSync(path.join(tmpDir, 'tsconfig.json'), '{}');
+        fs.writeFileSync(path.join(tmpDir, 'tsconfig.build.json'), '{}');
+        fs.writeFileSync(path.join(subDir, 'child.ts'), 'export const a = 1;');
+        fs.writeFileSync(path.join(nodeModules, 'keep.ts'), 'keep');
+        fs.writeFileSync(path.join(gitDir, 'git.ts'), 'git');
+
+        try {
+            cmd.removeTypeScriptArtifacts(tmpDir);
+            expect(fs.existsSync(path.join(tmpDir, 'app.js'))).toBe(true);
+            expect(fs.existsSync(path.join(tmpDir, 'app.ts'))).toBe(false);
+            expect(fs.existsSync(path.join(tmpDir, 'app.d.ts'))).toBe(false);
+            expect(fs.existsSync(path.join(tmpDir, 'app.d.ts.map'))).toBe(false);
+            expect(fs.existsSync(path.join(tmpDir, 'tsconfig.json'))).toBe(false);
+            expect(fs.existsSync(path.join(tmpDir, 'tsconfig.build.json'))).toBe(false);
+            expect(fs.existsSync(path.join(subDir, 'child.ts'))).toBe(false);
+            expect(fs.existsSync(path.join(nodeModules, 'keep.ts'))).toBe(true);
+            expect(fs.existsSync(path.join(gitDir, 'git.ts'))).toBe(true);
+        } finally {
+            if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    test('updatePackageJsonForJavaScript modifies package.json correctly', () => {
+        const cmd: NewCommand = new NewCommand();
+        const tmpDir: string = path.join(os.tmpdir(), `test-pkg-${Date.now()}`);
+        fs.mkdirSync(tmpDir, { recursive: true });
+        const pkgFile: string = path.join(tmpDir, 'package.json');
+        fs.writeFileSync(pkgFile, JSON.stringify({
+            main: 'app.ts',
+            types: 'app.ts',
+            scripts: {
+                build: 'tsc',
+                'build:clean': 'rm -rf build',
+                start: 'node app.js',
+                'start:prod': 'node build/app.js'
+            },
+            devDependencies: {
+                typescript: '^5.0.0',
+                '@types/node': '^20.0.0',
+                'ts-node': '^10.9.0',
+                tsx: '^4.0.0',
+                other: '1.0.0'
+            }
+        }, null, 2));
+
+        try {
+            cmd.updatePackageJsonForJavaScript(tmpDir);
+            const updated = JSON.parse(fs.readFileSync(pkgFile, 'utf8'));
+            expect(updated.main).toBe('app.js');
+            expect(updated.types).toBeUndefined();
+            expect(updated.scripts.build).toBeUndefined();
+            expect(updated.scripts['build:clean']).toBeUndefined();
+            expect(updated.scripts['start:prod']).toBeUndefined();
+            expect(updated.scripts.start).toBe('node app.js');
+            expect(updated.scripts['server:start']).toBe('node app.js');
+            expect(updated.scripts.server).toBe('node app.js');
+            expect(updated.devDependencies.typescript).toBeUndefined();
+            expect(updated.devDependencies['@types/node']).toBeUndefined();
+            expect(updated.devDependencies['ts-node']).toBeUndefined();
+            expect(updated.devDependencies.tsx).toBeUndefined();
+            expect(updated.devDependencies.other).toBe('1.0.0');
+
+            // Non-existent package.json should not throw
+            expect(() => cmd.updatePackageJsonForJavaScript('/non/existent')).not.toThrow();
+        } finally {
+            if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    test('convertToJavaScript runs build, moves files, removes TS artifacts and updates package.json', async () => {
+        const cmd: NewCommand = new NewCommand();
+        const tmpDir: string = path.join(os.tmpdir(), `test-convert-${Date.now()}`);
+        const buildDir: string = path.join(tmpDir, 'build');
+        fs.mkdirSync(buildDir, { recursive: true });
+        fs.writeFileSync(path.join(buildDir, 'app.js'), 'console.log("hello");');
+        fs.writeFileSync(path.join(tmpDir, 'app.ts'), 'console.log("hello");');
+        fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({ main: 'app.ts' }));
+
+        jest.spyOn(cmd, 'buildWithTsc').mockResolvedValue();
+
+        try {
+            await cmd.convertToJavaScript(tmpDir);
+            expect(cmd.buildWithTsc).toHaveBeenCalledWith(tmpDir);
+            expect(fs.existsSync(path.join(tmpDir, 'app.js'))).toBe(true);
+            expect(fs.existsSync(path.join(tmpDir, 'app.ts'))).toBe(false);
+            expect(fs.existsSync(buildDir)).toBe(false);
+        } finally {
+            if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    test('convertToJavaScript when build directory does not exist', async () => {
+        const cmd: NewCommand = new NewCommand();
+        const tmpDir: string = path.join(os.tmpdir(), `test-convert-nobuild-${Date.now()}`);
+        fs.mkdirSync(tmpDir, { recursive: true });
+        jest.spyOn(cmd, 'buildWithTsc').mockResolvedValue();
+        try {
+            await cmd.convertToJavaScript(tmpDir);
+        } finally {
+            if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    test('getTscCommand and buildWithTsc with tsconfig.build.json or fallback', async () => {
+        const cmd: NewCommand = new NewCommand();
+        const tscCmd = cmd.getTscCommand();
+        expect(tscCmd).toContain('tsc');
+
+        const tmpDir: string = path.join(os.tmpdir(), `test-tsc-build-${Date.now()}`);
+        fs.mkdirSync(tmpDir, { recursive: true });
+        const runAsyncSpy = jest.spyOn(cmd, 'runCommandsAsync').mockResolvedValue('tsc ok');
+
+        try {
+            // Fallback when tsconfig.build.json doesn't exist
+            await cmd.buildWithTsc(tmpDir);
+            expect(runAsyncSpy).toHaveBeenCalledWith([`${tscCmd} -p tsconfig.json`], { cwd: tmpDir });
+
+            // When tsconfig.build.json exists
+            fs.writeFileSync(path.join(tmpDir, 'tsconfig.build.json'), '{}');
+            await cmd.buildWithTsc(tmpDir);
+            expect(runAsyncSpy).toHaveBeenCalledWith([`${tscCmd} -p tsconfig.build.json`], { cwd: tmpDir });
+        } finally {
+            if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    test('cleanCompiledFile strips strict, esModule, sourcemap, and cleans indexed identifiers', () => {
+        const cmd: NewCommand = new NewCommand();
+        const input: string = `"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const application_1 = require("@ostro/foundation/application");
+const kernel_1 = require("~/app/http/kernel");
+const kernel_2 = require("~/app/console/kernel");
+const function_1 = require("@ostro/support/function");
+const app = new application_1.default(process.cwd());
+app.singleton('@ostro/contracts/http/kernel', kernel_1.default);
+app.singleton('@ostro/contracts/console/kernel', kernel_2.default);
+const port = (0, function_1.env)('PORT', 8080);
+const otherCall = (0, obj.custom)();
+exports.default = app;
+//# sourceMappingURL=app.js.map
+`;
+        const result: string = cmd.cleanCompiledFile(input);
+        expect(result).not.toContain('"use strict"');
+        expect(result).not.toContain('Object.defineProperty(exports, "__esModule"');
+        expect(result).not.toContain('//# sourceMappingURL');
+        expect(result).not.toContain('_interop');
+        expect(result).not.toContain('.default');
+        expect(result).toContain('const application = require("@ostro/foundation/application");');
+        expect(result).toContain('const kernel = require("~/app/http/kernel");');
+        expect(result).toContain('const kernel2 = require("~/app/console/kernel");');
+        expect(result).toContain('const { env } = require("@ostro/support/function");');
+        expect(result).toContain('const port = env(\'PORT\', 8080);');
+        expect(result).toContain('const otherCall = obj.custom();');
+        expect(result).toContain('const app = new application(process.cwd());');
+        expect(result).toContain("app.singleton('@ostro/contracts/http/kernel', kernel);");
+        expect(result).toContain("app.singleton('@ostro/contracts/console/kernel', kernel2);");
+        expect(result).toContain('module.exports = app;');
+        expect(result).not.toContain('module.exports.default');
+    });
+
+    test('cleanJavaScriptArtifacts deletes map files and cleans js files recursively', () => {
+        const cmd: NewCommand = new NewCommand();
+        const tmpDir: string = path.join(os.tmpdir(), `test-clean-artifacts-${Date.now()}`);
+        const subDir: string = path.join(tmpDir, 'sub');
+        fs.mkdirSync(subDir, { recursive: true });
+
+        const mapFile: string = path.join(subDir, 'test.js.map');
+        const jsFile: string = path.join(subDir, 'test.js');
+        fs.writeFileSync(mapFile, '{"version":3}');
+        fs.writeFileSync(jsFile, '"use strict";\nObject.defineProperty(exports, "__esModule", { value: true });\nexports.default = 42;\n//# sourceMappingURL=test.js.map\n');
+
+        try {
+            cmd.cleanJavaScriptArtifacts(tmpDir);
+            expect(fs.existsSync(mapFile)).toBe(false);
+            expect(fs.existsSync(jsFile)).toBe(true);
+            const content = fs.readFileSync(jsFile, 'utf8');
+            expect(content).not.toContain('"use strict"');
+            expect(content).not.toContain('sourceMappingURL');
+            expect(content).toContain('module.exports = 42;');
+            expect(content).not.toContain('module.exports.default');
+        } finally {
+            if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    test('cleanJavaScriptArtifacts leaves unchanged js files as-is', () => {
+        const cmd: NewCommand = new NewCommand();
+        const tmpDir: string = path.join(os.tmpdir(), `test-clean-nochange-${Date.now()}`);
+        fs.mkdirSync(tmpDir, { recursive: true });
+        const jsFile: string = path.join(tmpDir, 'plain.js');
+        fs.writeFileSync(jsFile, 'console.log("clean");\n');
+        try {
+            cmd.cleanJavaScriptArtifacts(tmpDir);
+            expect(fs.readFileSync(jsFile, 'utf8')).toBe('console.log("clean");\n');
+        } finally {
+            if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    test('fixBinSymlinks updates symlinks targeting tempWorkingDir', () => {
+        const cmd: NewCommand = new NewCommand();
+        const tmpDir: string = path.join(os.tmpdir(), `test-fix-bin-${Date.now()}`);
+        const tempWorkingDir: string = path.join(os.tmpdir(), `test-temp-worker-${Date.now()}`);
+        const binDir: string = path.join(tmpDir, 'node_modules', '.bin');
+        fs.mkdirSync(binDir, { recursive: true });
+
+        // Create target in destination and dummy symlinks
+        const targetFile: string = path.join(tmpDir, 'node_modules', 'ts-node', 'bin.js');
+        fs.mkdirSync(path.dirname(targetFile), { recursive: true });
+        fs.writeFileSync(targetFile, '#!/usr/bin/env node');
+
+        const symlinkPath: string = path.join(binDir, 'ts-node');
+        const oldTarget: string = path.join(tempWorkingDir, 'node_modules', 'ts-node', 'bin.js');
+        fs.symlinkSync(oldTarget, symlinkPath);
+
+        const regularFile: string = path.join(binDir, 'regular.txt');
+        fs.writeFileSync(regularFile, 'regular file');
+
+        const unrelatedSymlink: string = path.join(binDir, 'other-link');
+        fs.symlinkSync('/usr/local/bin/dummy', unrelatedSymlink);
+
+        try {
+            cmd.fixBinSymlinks(tmpDir, tempWorkingDir);
+            expect(fs.readlinkSync(symlinkPath)).toBe(targetFile);
+            expect(fs.readlinkSync(unrelatedSymlink)).toBe('/usr/local/bin/dummy');
+        } finally {
+            if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+    });
+
+    test('fixBinSymlinks handles non-existent binDir or lstat errors gracefully', () => {
+        const cmd: NewCommand = new NewCommand();
+        const nonExistent: string = path.join(os.tmpdir(), `test-no-bin-${Date.now()}`);
+        expect(() => cmd.fixBinSymlinks(nonExistent, '/tmp/foo')).not.toThrow();
+    });
 });
+

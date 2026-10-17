@@ -24,7 +24,8 @@
   },
   "dependencies": {
     "@ostro/console": "^2.0.0-alpha.1",
-    "@ostro/support": "^2.0.0-alpha.1"
+    "@ostro/support": "^2.0.0-alpha.1",
+    "typescript": "^5.8.0"
   },
   "scripts": {
     "build": "npx tsc -p tsconfig.build.json && chmod +x build/index.js",
