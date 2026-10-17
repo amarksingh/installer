@@ -7,7 +7,7 @@ import { EventEmitter } from 'events';
 
 // Ensure helpers are loaded
 import '@ostro/support/helpers';
-import NewCommand from '../newCommand';
+import NewCommand from '../src/newCommand';
 
 describe('NewCommand', () => {
     let originalExit: typeof process.exit;
