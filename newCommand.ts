@@ -206,11 +206,7 @@ class NewCommand extends Command {
             this.output.writeln('<comment>Application ready! Build something amazing.</comment>');
             process.stdout.write('\n');
             this.output.writeln('<fg=cyan>cd ' + $name + '</fg>');
-            if (format === 'ts') {
-                this.output.writeln('<fg=cyan>node build/app.js</fg>');
-            } else {
-                this.output.writeln('<fg=cyan>node app.js</fg>');
-            }
+            this.output.writeln('<fg=cyan>npm run server:start</fg>');
         } catch (error: any) {
             this.stopSpinnerAndClear();
             if (tempWorkingDir) {
@@ -617,10 +613,10 @@ class NewCommand extends Command {
         if (pkg.scripts) {
             delete pkg.scripts.build;
             delete pkg.scripts['build:clean'];
-            pkg.scripts.start = 'node app.js';
-            pkg.scripts['server:start'] = 'node app.js';
-            pkg.scripts.server = 'node app.js';
+            delete pkg.scripts.start;
+            delete pkg.scripts.server;
             delete pkg.scripts['start:prod'];
+            pkg.scripts['server:start'] = 'node app.js';
         }
         if (pkg.devDependencies) {
             delete pkg.devDependencies.typescript;

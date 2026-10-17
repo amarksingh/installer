@@ -480,7 +480,7 @@ describe('NewCommand', () => {
 
             expect(cmd.info).toHaveBeenCalledWith('Pure JavaScript framework built');
             expect(cmd.info).toHaveBeenCalledWith('Application ready at destination (JS)');
-            expect(cmd.output.writeln).toHaveBeenCalledWith('<fg=cyan>node app.js</fg>');
+            expect(cmd.output.writeln).toHaveBeenCalledWith('<fg=cyan>npm run server:start</fg>');
         });
 
         test('successful install workflow with format passed as argument', async () => {
@@ -513,7 +513,7 @@ describe('NewCommand', () => {
 
             expect(cmd.info).toHaveBeenCalledWith('Pure JavaScript framework built');
             expect(cmd.info).toHaveBeenCalledWith('Application ready at destination (JS)');
-            expect(cmd.output.writeln).toHaveBeenCalledWith('<fg=cyan>node app.js</fg>');
+            expect(cmd.output.writeln).toHaveBeenCalledWith('<fg=cyan>npm run server:start</fg>');
         });
     });
 
@@ -637,9 +637,9 @@ describe('NewCommand', () => {
             expect(updated.scripts.build).toBeUndefined();
             expect(updated.scripts['build:clean']).toBeUndefined();
             expect(updated.scripts['start:prod']).toBeUndefined();
-            expect(updated.scripts.start).toBe('node app.js');
+            expect(updated.scripts.start).toBeUndefined();
+            expect(updated.scripts.server).toBeUndefined();
             expect(updated.scripts['server:start']).toBe('node app.js');
-            expect(updated.scripts.server).toBe('node app.js');
             expect(updated.devDependencies.typescript).toBeUndefined();
             expect(updated.devDependencies['@types/node']).toBeUndefined();
             expect(updated.devDependencies['ts-node']).toBeUndefined();
